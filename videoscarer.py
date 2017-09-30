@@ -113,7 +113,6 @@ class VideoScarer:
 
     def play_next(self):
         self.videoID += 1
-        print('I am here', self.videoID)
         if self.videoID > (len(self.normVideos) - 1):
             self.videoID = 0
         self.play_normal()
@@ -127,7 +126,6 @@ class VideoScarer:
         return
         
     def close(self,signal=None,frame=None):
-        print('calling close') 
         if self.isInitialized:
             self.isInitialized = False
             self.kill_all()
@@ -136,7 +134,6 @@ class VideoScarer:
             sys.exit(0)
             
     def run(self):
-        print('I am running')
         self.play_normal()
         while self.isInitialized:
             # Quit on ctrl-c or esc using PyGame's event handler
@@ -145,10 +142,8 @@ class VideoScarer:
                     self.close()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        print('pressed esc')
                         self.close()
                     elif event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                        print('pressed ctrl-c as event')
                         self.close()
                         
             # play through list of normal videos
@@ -218,6 +213,5 @@ if __name__ == '__main__':
         videoScarer.run()
 
     finally:
-        print('in finally block')
         if videoScarer is not None:
             videoScarer.close()
