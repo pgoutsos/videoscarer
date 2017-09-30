@@ -2,8 +2,9 @@ import RPi.GPIO as GPIO
 import time
 import os
 import sys
+import signal
 import pygame
-from subprocess import Popen
+import subprocess
 
 # Setup video lists
 normVideos_girlls = ["/home/pi/Videos/ghosts/girl_ls/meander1.mp4", \
@@ -54,15 +55,13 @@ scareVideos_allvert = scareVideos_girlvert + scareVideos_man1vert \
 normVideos = normVideos_allls
 scareVideos = scareVideos_allls
 
-# Initialize
-scareInterval = 10
-button1State = True
-lastButton1State = True
-GPIO.output(ledPin, GPIO.LOW)
-vidPlayer = None
-
 class VideoScarer:
-    def __init__(self,normVideos,scareVideos,volumeLevel):
+    def __init__(self,normVideos,scareVideos,volumeLevel,scareInterval,pirPin,ffButtonPin):
+        GPIO.setmode(GPIO.BCM)
+        self.pirSensor = PIRSensor(pirPin, scareInterval)
+        self.ffButton = Button(ffButtonPin)
+
+        self.isInitialized = True
         self.videoID = 0
         self.omxProcess = None
         if len(normVideos) != len(scareVideos):
@@ -70,25 +69,25 @@ class VideoScarer:
         else:
             self.normVideos = normVideos
             self.scareVideos = scareVideos
-			
-		# setup blank screen using pygame
-		# From Adafruit's video looper
-		self.bgcolor = [0,0,0]  # blank screen color (rgb)
-		pygame.display.init()
-        pygame.font.init()
-        pygame.mouse.set_visible(False)
-		size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
-        self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
-        self.blank_screen()
-		self.playerCommand = ['omxplayer']
-		self.playerCommand.extend(['--vol', str(volumeLevel)])
-		self.playerCommand.extend(['-o', 'hdmi']) # change to 'local' if your Pi has 3.5mm out, and you'd rather use that for audio
+                        
+            # setup blank screen using pygame
+            # From Adafruit's video looper
+            self.bgcolor = [0,0,0]  # blank screen color (rgb)
+            pygame.display.init()
+            pygame.font.init()
+            pygame.mouse.set_visible(False)
+            size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
+            self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
+            self.blank_screen()
+            self.playerCommand = ['omxplayer','-b']
+            self.playerCommand.extend(['--vol', str(volumeLevel)])
+            self.playerCommand.extend(['-o', 'hdmi']) # change to 'local' if your Pi has 3.5mm out, and you'd rather use that for audio
     
-	def _blank_screen(self):
+    def blank_screen(self):
         # from Adafruit's video looper
         self.screen.fill(self.bgcolor)
         pygame.display.update()
-		
+                
     def kill_all(self):
         if self.is_playing():
             self.omxProcess.kill()
@@ -103,19 +102,18 @@ class VideoScarer:
 
     def play_normal(self):
         self.kill_all()
-		self.playerCommand.extend(['-b', self.normVideos[self.videoID])
-        self.omxProcess = Popen(self.playerCommand, stdout=open(os.devnull, 'wb'), close_fds=True)
+        self.omxProcess = subprocess.Popen(self.playerCommand + [self.normVideos[self.videoID]], stdout=open(os.devnull, 'wb'), close_fds=True)
         return    
         
     def play_scare(self):
         self.kill_all()
-		self.playerCommand.extend(['-b', self.scareVideos[self.videoID])
-        self.omxProcess = Popen(self.playerCommand, stdout=open(os.devnull, 'wb'), close_fds=True)
+        self.omxProcess = subprocess.Popen(self.playerCommand + [self.scareVideos[self.videoID]], stdout=open(os.devnull, 'wb'), close_fds=True)
         self.omxProcess.wait()
         return
 
     def play_next(self):
         self.videoID += 1
+        print('I am here', self.videoID)
         if self.videoID > (len(self.normVideos) - 1):
             self.videoID = 0
         self.play_normal()
@@ -127,80 +125,99 @@ class VideoScarer:
             self.videoID = len(self.normVideos) - 1
         self.play_normal()
         return
-		
-	def close(self):
-		self.kill_all()
-		pygame.quit()
+        
+    def close(self,signal=None,frame=None):
+        print('calling close') 
+        if self.isInitialized:
+            self.isInitialized = False
+            self.kill_all()
+            GPIO.cleanup()
+            pygame.quit()
+            sys.exit(0)
+            
+    def run(self):
+        print('I am running')
+        self.play_normal()
+        while self.isInitialized:
+            # Quit on ctrl-c or esc using PyGame's event handler
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.close()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        print('pressed esc')
+                        self.close()
+                    elif event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        print('pressed ctrl-c as event')
+                        self.close()
+                        
+            # play through list of normal videos
+            if not self.is_playing():
+                self.play_next()
 
-class FFButton:
-    def __init__(self, buttonPin, videoScarer):
-		self.videoScarer = videoScarer
-		# Setup the button as a GPIO input and initialize its status
-		self.buttonPin = buttonPin
-		GPIO.setup(self.buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		self.buttonState = True
-		self.lastButtonState = True
-	
-	def advance_if_needed(self):
-		# force movie to advance if button is pressed
-		self.buttonState = GPIO.input(self.buttonPin)
-		if (self.buttonState != self.lastButtonState) and not self.buttonState: # keeps held down button from re-triggering
-			self.videoScarer.play_next()
-		self.lastButtonState = self.buttonState
-		
+            # FF if requested
+            if self.ffButton.is_pressed():
+                self.play_next()
+            time.sleep(0.1)
+                        
+            # Check the PIR sensor and scare if appropriate
+            if self.pirSensor.is_triggered():
+                self.play_scare()
+
+class Button:
+    def __init__(self, buttonPin):
+        self.videoScarer = videoScarer
+        # Setup the button as a GPIO input and initialize its status
+        self.buttonPin = buttonPin
+        GPIO.setup(self.buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self.buttonState = True
+        self.lastButtonState = True
+        
+    def is_pressed(self):
+        # check if button is pressed, but not held down
+        self.buttonState = GPIO.input(self.buttonPin)
+        if (self.buttonState != self.lastButtonState) and not self.buttonState: # keeps held down button from re-triggering
+            return True
+        self.lastButtonState = self.buttonState
+        return False
+                
 class PIRSensor:
-	def __init__(self, pirPin, videoScarer, scareInterval):
-		self.lastScareTime = time.time()
-		self.videoScarer = videoScarer
-		# Setup the button as a GPIO input and initialize its status
-		self.pirPin = pirPin
-		GPIO.setup(self.pirPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-		self.scareInterval = scareInterval
+    def __init__(self, pirPin, triggerInterval):
+        self.lastTriggerTime = time.time()
+        # Setup the button as a GPIO input and initialize its status
+        self.pirPin = pirPin
+        GPIO.setup(self.pirPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        self.triggerInterval = triggerInterval
 
-	def scare_if_needed(self):
-		# SCARE if PIR is triggered and enough time has passed since last scare
-		if (time.time() - self.lastScareTime) > self.scareInterval:
-			pirVal = GPIO.input(pirPin)
-			if pirVal == 0:
-				#print("No scare", pirVal)
-				#GPIO.output(ledPin, GPIO.LOW)
-				time.sleep(0.1)
+    def is_triggered(self):
+        # is PIR is triggered and enough time has passed since last trigger
+        if (time.time() - self.lastTriggerTime) > self.triggerInterval:
+            pirVal = GPIO.input(pirPin)
+            if pirVal == 0:
+                return False
 
-			elif pirVal == 1:
-				#print("Spooky time!", pirVal)
-				#GPIO.output(ledPin, GPIO.HIGH)
-				self.vidPlayer.play_scare()
-				self.lastScareTime = time.time()
-				time.sleep(0.1)
-				
+            elif pirVal == 1:
+                self.lastTriggerTime = time.time()
+                return True
+                                
 if __name__ == '__main__':
-	# Pin definitions
-	pirPin = 17
-	buttonPin = 22
+    # Some constants
+    volumeLevel = 10   # omxplayer volume level
+    scareInterval = 10 # seconds between consecutive scares
+    
+    # Pin definitions
+    pirPin = 17
+    ffButtonPin = 22
+        
+    videoScarer = None
+    try:
+        videoScarer = VideoScarer(normVideos, scareVideos, volumeLevel, scareInterval,pirPin,ffButtonPin)
+        # handle ctrl-c... only works if pygame is inactive
+        signal.signal(signal.SIGINT, videoScarer.close)
+        signal.signal(signal.SIGTERM, videoScarer.close)
+        videoScarer.run()
 
-	# Setup GPIO
-	GPIO.setmode(GPIO.BCM)
-	
-	vidPlayer = None
-	try:
-		videoScarer = VideoScarer(normVideos, scareVideos)
-		ffButton = FFButton(buttonPin, videoScarer)
-		pirSensor = PIRSensor(pirPin, videoScarer, 10)
-		videoScarer.play_normal()
-
-		while True:
-			# play through list of normal videos
-			if not videoScarer.is_playing():
-				videoScarer.play_next()
-
-			# FF if requested
-			ffButton.advance_if_needed()
-			
-			# Check the PIR sensor and scare if appropriate
-			pirSensor.scare_if_needed()
-
-
-	except:
-		if vidPlayer is not None:
-			vidPlayer.close()
-		GPIO.cleanup()
+    finally:
+        print('in finally block')
+        if videoScarer is not None:
+            videoScarer.close()
