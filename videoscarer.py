@@ -134,6 +134,11 @@ class VideoScarer:
             sys.exit(0)
             
     def run(self):
+        # NOTE: all the PIR timer resets avoid a brownout issue that happens
+        # when the video player starts. The PIR sensor will detect a false
+        # positive due to the power fluctuation, and the time reset just 
+        # repurposes the triggerInterval to wait a few seconds. Alternatively,
+        # don't source the power from the Pi. 
         self.play_normal()
         self.pirSensor.reset_trigger_time()
         while self.isInitialized:
