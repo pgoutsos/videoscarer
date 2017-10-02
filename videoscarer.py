@@ -135,6 +135,7 @@ class VideoScarer:
             
     def run(self):
         self.play_normal()
+        self.pirSensor.reset_trigger_time()
         while self.isInitialized:
             # Quit on ctrl-c or esc using PyGame's event handler
             for event in pygame.event.get():
@@ -149,15 +150,18 @@ class VideoScarer:
             # play through list of normal videos
             if not self.is_playing():
                 self.play_next()
+                self.pirSensor.reset_trigger_time()
 
             # FF if requested
             if self.ffButton.is_pressed():
                 self.play_next()
+                self.pirSensor.reset_trigger_time()
             time.sleep(0.1)
                         
             # Check the PIR sensor and scare if appropriate
             if self.pirSensor.is_triggered():
                 self.play_scare()
+                self.pirSensor.reset_trigger_time()
 
 class Button:
     def __init__(self, buttonPin):
@@ -187,13 +191,16 @@ class PIRSensor:
     def is_triggered(self):
         # is PIR is triggered and enough time has passed since last trigger
         if (time.time() - self.lastTriggerTime) > self.triggerInterval:
-            pirVal = GPIO.input(pirPin)
+            pirVal = GPIO.input(self.pirPin)
             if pirVal == 0:
                 return False
 
             elif pirVal == 1:
                 self.lastTriggerTime = time.time()
                 return True
+            
+    def reset_trigger_time(self):
+        self.lastTriggerTime = time.time()
                                 
 if __name__ == '__main__':
     # Some constants
