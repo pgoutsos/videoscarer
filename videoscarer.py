@@ -39,9 +39,9 @@ class VideoScarer:
             size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
             self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
             self.blank_screen()
-            self.playerCommand = ['omxplayer','-b']
+            self.playerCommand = ['cvlc']
             self.playerCommand.extend(['--vol', str(volumeLevel)])
-            self.playerCommand.extend(['-o', 'hdmi']) # change to 'local' if your Pi has 3.5mm out, and you'd rather use that for audio
+            #self.playerCommand.extend(['-o', 'hdmi']) # change to 'local' if your Pi has 3.5mm out, and you'd rather use that for audio
     
     def blank_screen(self):
         # from Adafruit's video looper
@@ -51,7 +51,7 @@ class VideoScarer:
     def kill_all(self):
         if self.is_playing():
             self.omxProcess.kill()
-        os.system('killall omxplayer.bin')
+        os.system('killall -9 VLC')
         return
 
     def is_playing(self):
