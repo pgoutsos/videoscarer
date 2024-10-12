@@ -7,51 +7,11 @@ import pygame
 import subprocess
 
 # Setup video lists
-normVideos_girlls = ["/home/pi/Videos/ghosts/girl_ls/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/girl_ls/phase1.mp4"]
-scareVideos_girlls = ["/home/pi/Videos/ghosts/girl_ls/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/girl_ls/phasejumpscare1.mp4"]
-normVideos_girlvert = ["/home/pi/Videos/ghosts/girl_vert/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/girl_vert/phase1.mp4"]
-scareVideos_girlvert = ["/home/pi/Videos/ghosts/girl_vert/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/girl_vert/phasejumpscare1.mp4"]
+normVideos_girlls = ["/home/pgoutsos/Videos/ghosts/girl/meander1.mp4"]
+scareVideos_girlls = ["/home/pi/Videos/ghosts/girl_ls/jumpscare1.mp4"]
 
-normVideos_man1ls = ["/home/pi/Videos/ghosts/man_ls/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/man_ls/phase1.mp4"]
-scareVideos_man1ls = ["/home/pi/Videos/ghosts/man_ls/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/man_ls/phasejumpscare1.mp4"]
-normVideos_man1vert = ["/home/pi/Videos/ghosts/man_vert/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/man_vert/phase1.mp4"]
-scareVideos_man1vert = ["/home/pi/Videos/ghosts/man_vert/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/man_vert/phasejumpscare1.mp4"]
-
-normVideos_womanls = ["/home/pi/Videos/ghosts/woman_ls/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/woman_ls/phase1.mp4"]
-scareVideos_womanls = ["/home/pi/Videos/ghosts/woman_ls/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/woman_ls/phasejumpscare1.mp4"]
-normVideos_womanvert = ["/home/pi/Videos/ghosts/woman_vert/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/woman_vert/phase1.mp4"]
-scareVideos_womanvert = ["/home/pi/Videos/ghosts/woman_vert/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/woman_vert/phasejumpscare1.mp4"]
-
-normVideos_man2ls = ["/home/pi/Videos/ghosts/man2_ls/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/man2_ls/phase1.mp4"]
-scareVideos_man2ls = ["/home/pi/Videos/ghosts/man2_ls/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/man2_ls/phasejumpscare1.mp4"]
-normVideos_man2vert = ["/home/pi/Videos/ghosts/man2_vert/meander1.mp4", \
-                     "/home/pi/Videos/ghosts/man2_vert/phase1.mp4"]
-scareVideos_man2vert = ["/home/pi/Videos/ghosts/man2_vert/jumpscare1.mp4", \
-                      "/home/pi/Videos/ghosts/man2_vert/phasejumpscare1.mp4"]
-
-normVideos_allls = normVideos_girlls + normVideos_man1ls \
-                   + normVideos_womanls + normVideos_man2ls
-scareVideos_allls = scareVideos_girlls + scareVideos_man1ls \
-                    + scareVideos_womanls + scareVideos_man2ls
-normVideos_allvert = normVideos_girlvert + normVideos_man1vert \
-                   + normVideos_womanvert + normVideos_man2vert
-scareVideos_allvert = scareVideos_girlvert + scareVideos_man1vert \
-                   + scareVideos_womanvert + scareVideos_man2vert
-
+normVideos_allls = normVideos_girlls 
+scareVideos_allls = scareVideos_girlls 
 normVideos = normVideos_allls
 scareVideos = scareVideos_allls
 
@@ -213,7 +173,7 @@ if __name__ == '__main__':
     scareInterval = 10 # seconds between consecutive scares
     
     # Pin definitions
-    pirPin = 17
+    pirPin = 21
     ffButtonPin = 22
         
     videoScarer = None
