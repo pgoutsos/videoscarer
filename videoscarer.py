@@ -40,7 +40,7 @@ class VideoScarer:
             self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
             self.blank_screen()
             self.playerCommand = ['cvlc']
-            self.playerCommand.extend(['--vol', str(volumeLevel)])
+            #self.playerCommand.extend(['--vol', str(volumeLevel)])
             #self.playerCommand.extend(['-o', 'hdmi']) # change to 'local' if your Pi has 3.5mm out, and you'd rather use that for audio
     
     def blank_screen(self):
