@@ -8,7 +8,7 @@ import subprocess
 
 # Setup video lists
 normVideos_girlls = ["/home/pgoutsos/Videos/ghosts/girl/meander1.mp4"]
-scareVideos_girlls = ["/home/pi/Videos/ghosts/girl_ls/jumpscare1.mp4"]
+scareVideos_girlls = ["/home/pgoutsos/Videos/ghosts/girl_ls/jumpscare1.mp4"]
 
 normVideos_allls = normVideos_girlls 
 scareVideos_allls = scareVideos_girlls 
